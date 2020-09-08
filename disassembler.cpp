@@ -32,15 +32,15 @@ void disassembleInstr(uint32_t pc, uint32_t instr) {
   int32_t simm;         // signed version of immediate (I-type)
   uint32_t addr;        // jump address offset field (J-type)
 
-  opcode = /* FIXME */
-  rs = /* FIXME */
-  rt = /* FIXME */
-  rd = /* FIXME */
-  shamt = /* FIXME */
-  funct = /* FIXME */
-  uimm = /* FIXME */
-  simm = /* FIXME */
-  addr = /* FIXME */
+  opcode = instr >> 26;
+  rs = instr >> 21 & 0x1f;
+  rt = instr >> 16 & 0x1f;
+  rd = instr >> 11 & 0x1f;
+  shamt = instr >> 6 & 0x1f;
+  funct = instr & 0x3f;
+  uimm = instr & 0xffff;
+  simm = (((signed) uimm) << 16) >> 16;
+  addr = instr & 0x3ffffff;
 
   cout << hex << setw(8) << pc << ": ";
   switch(opcode) {
@@ -48,7 +48,7 @@ void disassembleInstr(uint32_t pc, uint32_t instr) {
       switch(funct) {
         case 0x00: cout << "sll " << regNames[rd] << ", " << regNames[rs] << ", " << dec << shamt; break;
         case 0x03: cout << "sra " << regNames[rd] << ", " << regNames[rs] << ", " << dec << shamt; break;/* sra */
-        case 0x08: cout << "jr " << rregNames[rs]; break;/* jr */
+        case 0x08: cout << "jr " << regNames[rs]; break;/* jr */
         case 0x10: cout << "mfhi " << regNames[rd]; break;/* mfhi */
         case 0x12: cout << "mflo " << regNames[rd]; break;/* mflo */
         case 0x18: cout << "mult " << regNames[rs] << ", " << regNames[rt]; break;/* mult */
@@ -56,20 +56,20 @@ void disassembleInstr(uint32_t pc, uint32_t instr) {
         case 0x21: cout << "addu " << regNames[rd] << ", " << regNames[rs] << ", " << dec << regNames[rt]; break;/* addu */
         case 0x22: cout << "sub " << regNames[rd] << ", " << regNames[rs] << ", " << dec << regNames[rt]; break;/* sub */
         case 0x23: cout << "subu " << regNames[rd] << ", " << regNames[rs] << ", " << dec << regNames[rt]; break;/* subu */
-        case 0x2a: cout << "slt " << regNames[rd] << ", " << regNames[rs] << ", " << dec << shamt; break;/* slt */
+        case 0x2a: cout << "slt " << regNames[rd] << ", " << regNames[rs] << ", " << dec << regNames[rt]; break;/* slt */
         default: cout << "unimplemented";
       }
       break;
     case 0x02: cout << "j " << hex << ((pc + 4) & 0xf0000000) + addr * 4; break;
     case 0x03: cout << "jal " << hex << ((pc + 4) & 0xf0000000) + addr * 4; break;/* jal *///FIX
-    case 0x04: cout << "beq " << regNames[rd] << ", " << regNames[rs] << ", " << dec << shamt; break;/* beq */ //FIX
-    case 0x05: cout << "bne " << regNames[rd] << ", " << regNames[rs] << ", " << dec << shamt; break;/* bne */ //FIX
-    case 0x09: cout << "addiu " << regNames[rt] << ", " << regNames[rs] << ", " << uimm; break;/* addiu */
-    case 0xc: cout << "andi " << regNames[rt] << ", " << regNames[rs] << ", " << simm; break;/* andi */
-    case 0xf: cout << "lui " << regNames[rt] << simm; break;/* lui */
+    case 0x04: cout << "beq " << regNames[rs] << ", " << regNames[rt] << ", " << pc + 4 *simm + 4; break;/* beq */ //FIX
+    case 0x05: cout << "bne " << regNames[rs] << ", " << regNames[rt] << ", " << pc + 4 *simm + 4; break;/* bne */ //FIX
+    case 0x09: cout << "addiu " << regNames[rt] << ", " << regNames[rs] << ", " << dec << (simm); break;/* addiu */
+    case 0xc: cout << "andi " << regNames[rt] << ", " << regNames[rs] << ", " << dec << uimm; break;/* andi */
+    case 0xf: cout << "lui " << regNames[rt] << ", " << dec << (simm); break;/* lui */
     case 0x1a: cout << "trap " << hex << addr; break;
-    case 0x23: cout << "lw " << regNames[rt] << ; break;/* lw */ //FIX Baseoffset(rs?)
-    case 0x2b: cout << "sw " << regNames[rt] << ; break;/* sw */ //FIX Baseoffset(rs?)
+    case 0x23: cout << "lw " << regNames[rt] << ", " << dec << simm << "(" << regNames[rs] << ")"; break;/* lw */ //FIX Baseoffset(rs?)
+    case 0x2b: cout << "sw " << regNames[rt] << ", " << dec << simm << "(" << regNames[rs] << ")"; break;/* sw */ //FIX Baseoffset(rs?)
     default: cout << "unimplemented";
   }
   cout << endl;
